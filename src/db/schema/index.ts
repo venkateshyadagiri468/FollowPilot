@@ -160,10 +160,16 @@ export const conversations = pgTable(
       .notNull()
       .references(() => leads.id, { onDelete: "cascade" }),
     subject: text("subject").notNull(),
+    status: text("status", { enum: ["OPEN", "CLOSED", "ARCHIVED"] })
+      .default("OPEN")
+      .notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (table) => [index("conv_lead_idx").on(table.leadId)]
+  (table) => [
+    index("conv_lead_idx").on(table.leadId),
+    index("conv_org_lead_idx").on(table.organizationId, table.leadId),
+  ]
 );
 
 // 7. Messages Table

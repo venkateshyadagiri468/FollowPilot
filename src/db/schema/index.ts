@@ -12,6 +12,7 @@ import {
 // 1. Users Table
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
+  clerkUserId: text("clerk_user_id").unique(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: timestamp("email_verified"),
@@ -327,3 +328,32 @@ export const usageRecords = pgTable(
     uniqueIndex("usage_org_period_idx").on(table.organizationId, table.period),
   ]
 );
+
+// 14. Organization Invitations Table
+export const organizationInvitations = pgTable(
+  "organization_invitations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: text("role", { enum: ["OWNER", "ADMIN", "MEMBER", "VIEWER"] })
+      .default("MEMBER")
+      .notNull(),
+    token: text("token").notNull().unique(),
+    invitedByUserId: uuid("invited_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["PENDING", "ACCEPTED", "EXPIRED", "REVOKED"] })
+      .default("PENDING")
+      .notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("invitation_org_idx").on(table.organizationId),
+    index("invitation_token_idx").on(table.token),
+  ]
+);
+

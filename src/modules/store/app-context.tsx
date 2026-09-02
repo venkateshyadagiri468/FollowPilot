@@ -45,6 +45,7 @@ interface AppContextType {
   sendFollowupEmail: (leadId: string, followupId: string, subject: string, body: string) => Promise<boolean>;
   scheduleFollowup: (leadId: string, subject: string, body: string, timingStr: string) => void;
   addLeadNote: (leadId: string, noteText: string) => void;
+  setActiveOrgId: (orgId: string) => void;
   resetToSeedData: () => void;
 }
 
@@ -52,7 +53,22 @@ const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user] = useState<MockUser>(INITIAL_USER);
-  const [org] = useState<MockOrg>(INITIAL_ORG);
+  const [org, setOrg] = useState<MockOrg>(INITIAL_ORG);
+
+  const setActiveOrgId = (orgId: string) => {
+    const mockNames: Record<string, string> = {
+      org_demo_1: "Acme Corp (Demo)",
+      org_demo_2: "FollowPilot Agency",
+      org_demo_3: "Client Sales Team",
+    };
+    setOrg({
+      id: orgId,
+      name: mockNames[orgId] || "New Workspace",
+      slug: orgId,
+      role: "OWNER",
+    });
+    toast.info(`Switched to workspace "${mockNames[orgId] || orgId}"`);
+  };
   const [usage, setUsage] = useState<MockUsage>(INITIAL_USAGE);
   const [leads, setLeads] = useState<MockLead[]>(INITIAL_LEADS);
   const [activities, setActivities] = useState<Record<string, MockActivity[]>>(INITIAL_ACTIVITIES);
@@ -451,6 +467,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         sendFollowupEmail,
         scheduleFollowup,
         addLeadNote,
+        setActiveOrgId,
         resetToSeedData,
       }}
     >

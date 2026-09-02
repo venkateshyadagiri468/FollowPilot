@@ -14,4 +14,18 @@ export interface MembershipEntity {
   userId: string;
   role: Role;
   joinedAt: string;
+  userEmail?: string;
+  userName?: string;
+}
+
+export interface OrganizationInvitationEntity {
+  id: string;
+  organizationId: string;
+  email: string;
+  role: Role;
+  token: string;
+  invitedByUserId: string;
+  status: "PENDING" | "ACCEPTED" | "EXPIRED" | "REVOKED";
+  expiresAt: string;
+  createdAt: string;
 }

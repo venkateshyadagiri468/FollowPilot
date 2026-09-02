@@ -1,0 +1,41 @@
+name: FollowPilot Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    name: Build & Validate Foundation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run TypeScript Type Check
+        run: npx tsc --noEmit
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Unit Tests
+        run: npx tsx src/modules/scoring/__tests__/score-engine.test.ts && npx tsx src/modules/leads/__tests__/csv-importer.test.ts
+
+      - name: Build Application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_sample_key_for_ci"
+          CLERK_SECRET_KEY: "sk_test_sample_key_for_ci"

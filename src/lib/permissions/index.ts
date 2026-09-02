@@ -1,6 +1,41 @@
 import { AuthenticationError, AuthorizationError } from "../errors";
 
-export type Role = "OWNER" | "ADMIN" | "MEMBER";
+export type Role = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
+
+export type Permission =
+  | "manage_billing"
+  | "manage_members"
+  | "manage_settings"
+  | "create_leads"
+  | "edit_leads"
+  | "view_leads"
+  | "send_emails";
+
+const PERMISSION_MATRIX: Record<Role, Permission[]> = {
+  OWNER: [
+    "manage_billing",
+    "manage_members",
+    "manage_settings",
+    "create_leads",
+    "edit_leads",
+    "view_leads",
+    "send_emails",
+  ],
+  ADMIN: [
+    "manage_members",
+    "manage_settings",
+    "create_leads",
+    "edit_leads",
+    "view_leads",
+    "send_emails",
+  ],
+  MEMBER: ["create_leads", "edit_leads", "view_leads", "send_emails"],
+  VIEWER: ["view_leads"],
+};
+
+export function hasPermission(role: Role, permission: Permission): boolean {
+  return PERMISSION_MATRIX[role]?.includes(permission) ?? false;
+}
 
 export function requireAuth(userId?: string | null): string {
   if (!userId) {
@@ -15,20 +50,22 @@ export function requireOrganizationMember(
   userOrgId?: string
 ): void {
   requireAuth(userId);
-  if (userOrgId && userOrgId !== targetOrgId) {
-    throw new AuthorizationError("Access denied to target organization data");
+  if (!userOrgId || userOrgId !== targetOrgId) {
+    throw new AuthorizationError("Access denied: Multi-tenant boundary violation");
   }
 }
 
-export function requireOrganizationRole(
+export function requirePermission(
   userId: string,
-  currentRole: Role,
-  allowedRoles: Role[]
+  userOrgId: string,
+  targetOrgId: string,
+  role: Role,
+  permission: Permission
 ): void {
-  requireAuth(userId);
-  if (!allowedRoles.includes(currentRole)) {
+  requireOrganizationMember(userId, targetOrgId, userOrgId);
+  if (!hasPermission(role, permission)) {
     throw new AuthorizationError(
-      `Role '${currentRole}' does not have permission for this operation. Required: ${allowedRoles.join(", ")}`
+      `Role '${role}' lacks mandatory permission '${permission}' for organization operations`
     );
   }
 }

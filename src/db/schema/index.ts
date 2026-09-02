@@ -44,7 +44,7 @@ export const memberships = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    role: text("role", { enum: ["OWNER", "ADMIN", "MEMBER"] })
+    role: text("role", { enum: ["OWNER", "ADMIN", "MEMBER", "VIEWER"] })
       .default("MEMBER")
       .notNull(),
     joinedAt: timestamp("joined_at").defaultNow().notNull(),
@@ -52,6 +52,7 @@ export const memberships = pgTable(
   (table) => [
     index("membership_org_idx").on(table.organizationId),
     index("membership_user_idx").on(table.userId),
+    uniqueIndex("membership_org_user_idx").on(table.organizationId, table.userId),
   ]
 );
 

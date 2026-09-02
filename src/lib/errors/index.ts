@@ -57,33 +57,39 @@ export class RateLimitError extends AppError {
   }
 }
 
+export class QuotaExceededError extends RateLimitError {}
+
 export class ExternalServiceError extends AppError {
   constructor(service: string, message = "External service request failed") {
     super(`${service}: ${message}`, 502, "EXTERNAL_SERVICE_ERROR", false);
   }
 }
 
-export function formatErrorResponse(error: unknown) {
+export function formatAppError(error: unknown): { statusCode: number; code: string; message: string } {
   if (error instanceof AppError) {
     return {
-      status: error.statusCode,
-      body: {
-        error: {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-        },
-      },
+      statusCode: error.statusCode,
+      code: error.code,
+      message: error.message,
     };
   }
 
   const message = error instanceof Error ? error.message : "An unexpected error occurred";
   return {
-    status: 500,
+    statusCode: 500,
+    code: "INTERNAL_SERVER_ERROR",
+    message: process.env.NODE_ENV === "production" ? "Internal server error" : message,
+  };
+}
+
+export function formatErrorResponse(error: unknown) {
+  const formatted = formatAppError(error);
+  return {
+    status: formatted.statusCode,
     body: {
       error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message: process.env.NODE_ENV === "production" ? "Internal server error" : message,
+        code: formatted.code,
+        message: formatted.message,
       },
     },
   };

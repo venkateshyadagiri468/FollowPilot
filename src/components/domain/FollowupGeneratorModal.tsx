@@ -22,12 +22,6 @@ export function FollowupGeneratorModal({ lead, followup, onClose }: FollowupGene
   const [reason, setReason] = useState(followup?.reason || "");
   const [recommendedTiming, setRecommendedTiming] = useState(followup?.recommendedTiming || "Today at 2:30 PM");
 
-  useEffect(() => {
-    if (!subject && !body) {
-      handleGenerateDraft();
-    }
-  }, []);
-
   const handleGenerateDraft = async () => {
     setIsGenerating(true);
     const draft = await generateDraft(lead.id, userNotes);
@@ -39,6 +33,12 @@ export function FollowupGeneratorModal({ lead, followup, onClose }: FollowupGene
       setRecommendedTiming(draft.recommendedTiming);
     }
   };
+
+  useEffect(() => {
+    if (!subject && !body) {
+      handleGenerateDraft();
+    }
+  }, []);
 
   const handleSendNow = async () => {
     if (!subject || !body) return;

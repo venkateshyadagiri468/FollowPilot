@@ -124,8 +124,8 @@ export class LeadRepository {
 
     // Deterministic tie-breaker sorting (sortBy -> createdAt -> id)
     result.sort((a, b) => {
-      let valA: any = a[sortBy];
-      let valB: any = b[sortBy];
+      const valA: any = a[sortBy];
+      const valB: any = b[sortBy];
 
       if (valA !== valB) {
         if (sortOrder === "desc") {

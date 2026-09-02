@@ -137,7 +137,7 @@ export function processCsvImport(
     const rowIndex = index + 1;
 
     // Extract mapped values & sanitize formula injection
-    let rawEmail = (row[mapping.email] || "").trim().toLowerCase();
+    const rawEmail = (row[mapping.email] || "").trim().toLowerCase();
     let rawFirstName = sanitizeFormulaInjection((row[mapping.firstName] || "").trim());
     let rawLastName = sanitizeFormulaInjection((row[mapping.lastName] || "").trim());
 

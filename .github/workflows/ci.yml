@@ -30,8 +30,8 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Run Unit Tests
-        run: npx tsx src/modules/scoring/__tests__/score-engine.test.ts && npx tsx src/modules/leads/__tests__/csv-importer.test.ts
+      - name: Run Automated Test Suite (Permissions, Scoring & Importer)
+        run: npm test
 
       - name: Build Application
         run: npm run build

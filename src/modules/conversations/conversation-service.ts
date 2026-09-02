@@ -26,6 +26,13 @@ export class ConversationService {
       throw new ValidationError("Subject line cannot be empty");
     }
 
+    // Verify lead exists and belongs to active organization
+    const { leadRepository } = await import("../leads/repository");
+    const lead = await leadRepository.findLeadById(context.activeOrgId, input.leadId);
+    if (!lead || lead.deletedAt) {
+      throw new NotFoundError(`Lead ${input.leadId} not found in organization ${context.activeOrgId}`);
+    }
+
     const conversation = await conversationRepository.createConversation(
       context.activeOrgId,
       input
@@ -74,7 +81,13 @@ export class ConversationService {
       conversationId
     );
     if (!conv) {
-      throw new NotFoundError(`Conversation ${conversationId} not found`);
+      throw new NotFoundError(`Conversation ${conversationId} not found in organization ${context.activeOrgId}`);
+    }
+
+    const { leadRepository } = await import("../leads/repository");
+    const lead = await leadRepository.findLeadById(context.activeOrgId, conv.leadId);
+    if (!lead || lead.deletedAt) {
+      throw new NotFoundError(`Inconsistent relationship: Lead ${conv.leadId} not found for conversation`);
     }
 
     const messages = await conversationRepository.getMessagesForConversation(
@@ -113,27 +126,64 @@ export class ConversationService {
       input.conversationId
     );
     if (!conv) {
-      throw new NotFoundError(`Conversation ${input.conversationId} not found`);
+      throw new NotFoundError(`Conversation ${input.conversationId} not found in organization ${context.activeOrgId}`);
     }
 
-    const message = await conversationRepository.addMessage(
-      context.activeOrgId,
-      input.conversationId,
-      input
-    );
+    // Verify Lead ownership & consistency
+    const { leadRepository } = await import("../leads/repository");
+    const lead = await leadRepository.findLeadById(context.activeOrgId, conv.leadId);
+    if (!lead || lead.deletedAt) {
+      throw new NotFoundError(`Inconsistent relationship: Lead ${conv.leadId} not active in org ${context.activeOrgId}`);
+    }
 
-    // Atomically trigger Activity Timeline Event
-    const activityType = input.direction === "OUTBOUND" ? "EMAIL_SENT" : "EMAIL_REPLIED";
-    await activityService.logActivity(context, {
-      leadId: conv.leadId,
-      type: activityType,
-      metadata: {
-        conversationId: conv.id,
-        messageId: message.id,
-        subject: conv.subject,
-        snippet: input.bodyText.substring(0, 120),
-      },
-    });
+    // Sanitize HTML body if provided
+    let cleanHtml = input.bodyHtml;
+    if (cleanHtml) {
+      cleanHtml = cleanHtml
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+        .replace(/on\w+="[^"]*"/gi, "")
+        .replace(/javascript:/gi, "");
+    }
+
+    // Atomic Execution Block (Message + Activity Timeline Link)
+    let message: MessageEntity;
+    try {
+      message = await conversationRepository.addMessage(
+        context.activeOrgId,
+        input.conversationId,
+        {
+          ...input,
+          bodyHtml: cleanHtml,
+        }
+      );
+
+      const existingMessages = await conversationRepository.getMessagesForConversation(
+        context.activeOrgId,
+        input.conversationId
+      );
+      const isThreadReply = existingMessages.length > 1;
+
+      const activityType =
+        input.direction === "OUTBOUND"
+          ? "EMAIL_SENT"
+          : isThreadReply
+          ? "EMAIL_REPLIED"
+          : "EMAIL_DELIVERED";
+
+      await activityService.logActivity(context, {
+        leadId: conv.leadId,
+        type: activityType,
+        metadata: {
+          conversationId: conv.id,
+          messageId: message.id,
+          subject: conv.subject,
+          snippet: input.bodyText.substring(0, 120),
+        },
+      });
+    } catch (error) {
+      logger.error("Failed atomic message & activity creation", { error, orgId: context.activeOrgId });
+      throw error;
+    }
 
     logger.info("message.posted", {
       event: "message.posted",

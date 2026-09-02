@@ -79,6 +79,11 @@ export class MemberService {
     }
 
     await organizationRepository.removeMember(targetMembershipId);
+    
+    // Unassign any leads assigned to the removed member to prevent orphaned ownership
+    const { leadRepository } = await import("../leads/repository");
+    await leadRepository.unassignLeadsForMember(orgId, targetMember.userId);
+
     logger.info("Member removed from organization", {
       orgId,
       actorUserId,

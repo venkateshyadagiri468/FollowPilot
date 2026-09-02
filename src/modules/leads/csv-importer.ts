@@ -1,6 +1,7 @@
 import Papa from "papaparse";
 import { MockLead } from "../store/mock-store";
 import { calculateLeadScore } from "../scoring/score-engine";
+import { ValidationError } from "@/lib/errors";
 
 export interface ColumnMapping {
   firstName: string;
@@ -34,7 +35,28 @@ export interface CsvImportResult {
   errors: CsvRowError[];
 }
 
+export const CSV_LIMITS = {
+  MAX_FILE_SIZE_BYTES: 5 * 1024 * 1024, // 5MB
+  MAX_ROW_COUNT: 5000,
+  MAX_FIELD_LENGTH: 500,
+};
+
+export function sanitizeFormulaInjection(val: string): string {
+  if (!val) return val;
+  const trimmed = val.trim();
+  if (/^[=+@\-\t\r]/.test(trimmed)) {
+    return `'${trimmed}`;
+  }
+  return trimmed;
+}
+
 export function parseCsvFile(csvContent: string): CsvParseResult {
+  if (csvContent.length > CSV_LIMITS.MAX_FILE_SIZE_BYTES) {
+    throw new ValidationError(
+      `CSV file exceeds maximum size limit of ${CSV_LIMITS.MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB`
+    );
+  }
+
   const parsed = Papa.parse<Record<string, string>>(csvContent, {
     header: true,
     skipEmptyLines: true,
@@ -42,6 +64,12 @@ export function parseCsvFile(csvContent: string): CsvParseResult {
   });
 
   const headers = parsed.meta.fields || [];
+
+  if (parsed.data.length > CSV_LIMITS.MAX_ROW_COUNT) {
+    throw new ValidationError(
+      `CSV row count (${parsed.data.length}) exceeds maximum limit of ${CSV_LIMITS.MAX_ROW_COUNT} rows`
+    );
+  }
 
   // Intelligent column detection
   const detectedMapping: ColumnMapping = {
@@ -80,13 +108,26 @@ export function processCsvImport(
   assignedUserName: string,
   dedupStrategy: "SKIP_DUPLICATE" | "UPDATE_EXISTING" | "ALLOW_DUPLICATE" = "SKIP_DUPLICATE"
 ): CsvImportResult {
+  if (csvContent.length > CSV_LIMITS.MAX_FILE_SIZE_BYTES) {
+    throw new ValidationError(
+      `CSV file exceeds maximum size limit of ${CSV_LIMITS.MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB`
+    );
+  }
+
   const parsed = Papa.parse<Record<string, string>>(csvContent, {
     header: true,
     skipEmptyLines: true,
   });
 
   const rows = parsed.data;
-  const existingEmails = new Set(existingLeads.map((l) => l.email.toLowerCase()));
+
+  if (rows.length > CSV_LIMITS.MAX_ROW_COUNT) {
+    throw new ValidationError(
+      `CSV row count (${rows.length}) exceeds maximum limit of ${CSV_LIMITS.MAX_ROW_COUNT} rows`
+    );
+  }
+
+  const existingEmails = new Set(existingLeads.map((l) => l.email.toLowerCase().trim()));
   const importedLeads: MockLead[] = [];
   const errors: CsvRowError[] = [];
   let duplicateCount = 0;
@@ -95,10 +136,10 @@ export function processCsvImport(
   rows.forEach((row, index) => {
     const rowIndex = index + 1;
 
-    // Extract mapped values
-    let rawEmail = (row[mapping.email] || "").trim();
-    let rawFirstName = (row[mapping.firstName] || "").trim();
-    let rawLastName = (row[mapping.lastName] || "").trim();
+    // Extract mapped values & sanitize formula injection
+    let rawEmail = (row[mapping.email] || "").trim().toLowerCase();
+    let rawFirstName = sanitizeFormulaInjection((row[mapping.firstName] || "").trim());
+    let rawLastName = sanitizeFormulaInjection((row[mapping.lastName] || "").trim());
 
     // Split name if single "name" column was mapped to firstName
     if (!rawLastName && rawFirstName.includes(" ")) {
@@ -107,10 +148,25 @@ export function processCsvImport(
       rawLastName = parts.slice(1).join(" ");
     }
 
-    const company = (row[mapping.company] || "").trim() || "Unknown Company";
-    const phone = (row[mapping.phone] || "").trim();
-    const jobTitle = (row[mapping.jobTitle] || "").trim() || "Lead";
+    const company = sanitizeFormulaInjection((row[mapping.company] || "").trim()) || "Unknown Company";
+    const phone = sanitizeFormulaInjection((row[mapping.phone] || "").trim());
+    const jobTitle = sanitizeFormulaInjection((row[mapping.jobTitle] || "").trim()) || "Lead";
     const rawStatus = (row[mapping.status] || "NEW").trim().toUpperCase();
+
+    // Field length check
+    if (
+      rawFirstName.length > CSV_LIMITS.MAX_FIELD_LENGTH ||
+      rawLastName.length > CSV_LIMITS.MAX_FIELD_LENGTH ||
+      company.length > CSV_LIMITS.MAX_FIELD_LENGTH
+    ) {
+      invalidCount++;
+      errors.push({
+        rowIndex,
+        email: rawEmail || undefined,
+        reason: `Field length exceeds maximum limit of ${CSV_LIMITS.MAX_FIELD_LENGTH} characters`,
+      });
+      return;
+    }
 
     // Email validation
     if (!rawEmail || !rawEmail.includes("@")) {
@@ -123,7 +179,7 @@ export function processCsvImport(
       return;
     }
 
-    const lowerEmail = rawEmail.toLowerCase();
+    const lowerEmail = rawEmail;
 
     // Duplicate detection
     if (existingEmails.has(lowerEmail)) {

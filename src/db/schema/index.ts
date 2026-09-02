@@ -95,6 +95,7 @@ export const leads = pgTable(
     customFields: jsonb("custom_fields").$type<Record<string, string>>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
   },
   (table) => [
     index("lead_org_idx").on(table.organizationId),

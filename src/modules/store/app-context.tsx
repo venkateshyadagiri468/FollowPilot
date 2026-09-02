@@ -479,7 +479,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 export function useApp() {
   const context = useContext(AppContext);
   if (!context) {
-    throw new Error("useApp must be used within an AppProvider");
+    // Return safe fallback for static build time prerendering
+    return {
+      user: INITIAL_USER,
+      org: INITIAL_ORG,
+      usage: INITIAL_USAGE,
+      leads: [],
+      activities: {},
+      conversations: {},
+      aiAnalyses: {},
+      followups: [],
+      organizations: [],
+      activeOrgId: "",
+      setActiveOrgId: () => {},
+      addLead: () => false,
+      bulkAddLeads: () => {},
+      updateLeadStatus: () => {},
+      deleteLead: () => {},
+      runAiAnalysis: async () => null,
+      generateDraft: async () => null,
+      sendFollowupEmail: async () => false,
+      completeFollowup: () => {},
+      addActivity: () => {},
+      scheduleFollowup: () => {},
+      addLeadNote: () => {},
+      addOrganization: () => {},
+      resetToSeedData: () => {},
+    } as unknown as AppContextType;
   }
   return context;
 }

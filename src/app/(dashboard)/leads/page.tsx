@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useApp } from "@/modules/store/app-context";
 import { ScorePill } from "@/components/domain/ScorePill";
 import { LeadStatusBadge } from "@/components/domain/LeadStatusBadge";
@@ -23,7 +24,10 @@ import {
 } from "lucide-react";
 import { NewLeadModal } from "@/components/domain/NewLeadModal";
 
-export default function LeadsPage() {
+function LeadsContent() {
+  const searchParams = useSearchParams();
+  const leadIdParam = searchParams.get("leadId");
+
   const { leads, updateLeadStatus, deleteLead } = useApp();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -36,9 +40,19 @@ export default function LeadsPage() {
   const [activeDrawerLead, setActiveDrawerLead] = useState<MockLead | null>(null);
   const [copilotLead, setCopilotLead] = useState<MockLead | null>(null);
 
+  // Deep-linking effect for ?leadId= query param
+  useEffect(() => {
+    if (leadIdParam) {
+      const match = (leads as MockLead[]).find((l: MockLead) => l.id === leadIdParam);
+      if (match) {
+        setActiveDrawerLead(match);
+      }
+    }
+  }, [leadIdParam, leads]);
+
   // Filter Logic
-  const filteredLeads = leads
-    .filter((l) => {
+  const filteredLeads = (leads as MockLead[])
+    .filter((l: MockLead) => {
       const matchSearch =
         l.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         l.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -50,7 +64,7 @@ export default function LeadsPage() {
 
       return matchSearch && matchStatus && matchPriority;
     })
-    .sort((a, b) => {
+    .sort((a: MockLead, b: MockLead) => {
       if (sortBy === "score") {
         return sortOrder === "desc" ? b.score - a.score : a.score - b.score;
       }
@@ -68,7 +82,7 @@ export default function LeadsPage() {
     if (selectedLeadIds.length === filteredLeads.length) {
       setSelectedLeadIds([]);
     } else {
-      setSelectedLeadIds(filteredLeads.map((l) => l.id));
+      setSelectedLeadIds(filteredLeads.map((l: MockLead) => l.id));
     }
   };
 
@@ -257,7 +271,7 @@ export default function LeadsPage() {
                   </td>
                 </tr>
               ) : (
-                filteredLeads.map((lead) => {
+                filteredLeads.map((lead: MockLead) => {
                   const isSelected = selectedLeadIds.includes(lead.id);
 
                   return (
@@ -370,5 +384,13 @@ export default function LeadsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function LeadsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-slate-400">Loading Leads Workspace...</div>}>
+      <LeadsContent />
+    </Suspense>
   );
 }

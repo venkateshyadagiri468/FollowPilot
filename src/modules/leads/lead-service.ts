@@ -153,6 +153,49 @@ export class LeadService {
     return updated;
   }
 
+  async assignLead(
+    context: TenantContext,
+    leadId: string,
+    targetUserId: string | null
+  ): Promise<LeadEntity> {
+    requirePermission(
+      context.userId,
+      context.activeOrgId,
+      context.activeOrgId,
+      context.role,
+      "edit_leads"
+    );
+
+    const existing = await leadRepository.findLeadById(context.activeOrgId, leadId);
+    if (!existing) {
+      throw new NotFoundError(`Lead ${leadId} not found`);
+    }
+
+    if (targetUserId) {
+      const { organizationRepository } = await import("../organizations/repository");
+      const targetMemberships = await organizationRepository.getUserMemberships(targetUserId);
+      const belongsToOrg = targetMemberships.some((m) => m.organizationId === context.activeOrgId);
+      if (!belongsToOrg) {
+        throw new ValidationError(`Target user '${targetUserId}' does not belong to organization '${context.activeOrgId}'`);
+      }
+    }
+
+    const updated = await leadRepository.updateLead(context.activeOrgId, leadId, {
+      assignedToUserId: targetUserId,
+      lastActivityAt: new Date().toISOString(),
+    });
+
+    logger.info("lead.owner_changed", {
+      event: "lead.owner_changed",
+      orgId: context.activeOrgId,
+      leadId,
+      actorUserId: context.userId,
+      targetUserId,
+    });
+
+    return updated;
+  }
+
   async deleteLead(context: TenantContext, leadId: string): Promise<void> {
     requirePermission(
       context.userId,
@@ -168,7 +211,12 @@ export class LeadService {
     }
 
     await leadRepository.deleteLead(context.activeOrgId, leadId);
-    logger.info("Lead deleted", { orgId: context.activeOrgId, leadId });
+    logger.info("lead.deleted", {
+      event: "lead.deleted",
+      orgId: context.activeOrgId,
+      leadId,
+      actorUserId: context.userId,
+    });
   }
 }
 

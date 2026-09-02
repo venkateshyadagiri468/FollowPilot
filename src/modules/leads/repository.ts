@@ -18,6 +18,7 @@ export interface LeadEntity {
   customFields?: Record<string, string> | null;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
 }
 
 export interface ActivityEntity {
@@ -52,6 +53,7 @@ export interface LeadQueryFilter {
   pageSize?: number;
   sortBy?: "score" | "lastActivityAt" | "createdAt";
   sortOrder?: "asc" | "desc";
+  includeDeleted?: boolean;
 }
 
 // In-Memory Persistence Repository
@@ -96,7 +98,9 @@ export class LeadRepository {
   private static activitiesStore: ActivityEntity[] = [];
 
   async findLeadsByOrg(orgId: string, filter?: LeadQueryFilter) {
-    let result = LeadRepository.leadsStore.filter((l) => l.organizationId === orgId);
+    let result = LeadRepository.leadsStore.filter(
+      (l) => l.organizationId === orgId && (filter?.includeDeleted ? true : !l.deletedAt)
+    );
 
     if (filter?.status) {
       result = result.filter((l) => l.status === filter.status);
@@ -105,7 +109,7 @@ export class LeadRepository {
       result = result.filter((l) => l.priority === filter.priority);
     }
     if (filter?.searchQuery) {
-      const q = filter.searchQuery.toLowerCase();
+      const q = filter.searchQuery.toLowerCase().trim();
       result = result.filter(
         (l) =>
           l.firstName.toLowerCase().includes(q) ||
@@ -118,17 +122,29 @@ export class LeadRepository {
     const sortBy = filter?.sortBy || "createdAt";
     const sortOrder = filter?.sortOrder || "desc";
 
+    // Deterministic tie-breaker sorting (sortBy -> createdAt -> id)
     result.sort((a, b) => {
       let valA: any = a[sortBy];
       let valB: any = b[sortBy];
-      if (sortOrder === "desc") {
-        return valA < valB ? 1 : -1;
+
+      if (valA !== valB) {
+        if (sortOrder === "desc") {
+          return valA < valB ? 1 : -1;
+        }
+        return valA > valB ? 1 : -1;
       }
-      return valA > valB ? 1 : -1;
+
+      // Tie-breaker 1: createdAt
+      if (a.createdAt !== b.createdAt) {
+        return a.createdAt < b.createdAt ? 1 : -1;
+      }
+
+      // Tie-breaker 2: id
+      return a.id < b.id ? 1 : -1;
     });
 
-    const page = filter?.page || 1;
-    const pageSize = filter?.pageSize || 20;
+    const page = Math.max(1, filter?.page || 1);
+    const pageSize = Math.min(Math.max(1, filter?.pageSize || 20), 100);
     const totalCount = result.length;
     const paginated = result.slice((page - 1) * pageSize, page * pageSize);
 
@@ -141,19 +157,19 @@ export class LeadRepository {
     };
   }
 
-  async findLeadById(orgId: string, leadId: string): Promise<LeadEntity | null> {
+  async findLeadById(orgId: string, leadId: string, includeDeleted = false): Promise<LeadEntity | null> {
     return (
       LeadRepository.leadsStore.find(
-        (l) => l.organizationId === orgId && l.id === leadId
+        (l) => l.organizationId === orgId && l.id === leadId && (includeDeleted ? true : !l.deletedAt)
       ) || null
     );
   }
 
-  async findLeadByEmail(orgId: string, email: string): Promise<LeadEntity | null> {
+  async findLeadByEmail(orgId: string, email: string, includeDeleted = false): Promise<LeadEntity | null> {
     const cleanEmail = email.toLowerCase().trim();
     return (
       LeadRepository.leadsStore.find(
-        (l) => l.organizationId === orgId && l.email.toLowerCase() === cleanEmail
+        (l) => l.organizationId === orgId && l.email.toLowerCase() === cleanEmail && (includeDeleted ? true : !l.deletedAt)
       ) || null
     );
   }
@@ -180,7 +196,7 @@ export class LeadRepository {
     data: Partial<LeadEntity>
   ): Promise<LeadEntity> {
     const idx = LeadRepository.leadsStore.findIndex(
-      (l) => l.organizationId === orgId && l.id === leadId
+      (l) => l.organizationId === orgId && l.id === leadId && !l.deletedAt
     );
     if (idx === -1) {
       throw new Error(`Lead ${leadId} not found in organization ${orgId}`);
@@ -197,9 +213,25 @@ export class LeadRepository {
   }
 
   async deleteLead(orgId: string, leadId: string): Promise<void> {
-    LeadRepository.leadsStore = LeadRepository.leadsStore.filter(
-      (l) => !(l.organizationId === orgId && l.id === leadId)
+    const idx = LeadRepository.leadsStore.findIndex(
+      (l) => l.organizationId === orgId && l.id === leadId
     );
+    if (idx !== -1) {
+      LeadRepository.leadsStore[idx].deletedAt = new Date().toISOString();
+      LeadRepository.leadsStore[idx].updatedAt = new Date().toISOString();
+    }
+  }
+
+  async unassignLeadsForMember(orgId: string, userId: string): Promise<number> {
+    let unassignedCount = 0;
+    LeadRepository.leadsStore.forEach((lead) => {
+      if (lead.organizationId === orgId && lead.assignedToUserId === userId) {
+        lead.assignedToUserId = null;
+        lead.updatedAt = new Date().toISOString();
+        unassignedCount++;
+      }
+    });
+    return unassignedCount;
   }
 
   async getActivities(orgId: string, leadId: string): Promise<ActivityEntity[]> {

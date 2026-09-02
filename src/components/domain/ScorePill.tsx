@@ -7,20 +7,20 @@ interface ScorePillProps {
 }
 
 export function ScorePill({ score, priority, showLabel = true }: ScorePillProps) {
-  let colorStyle = "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300";
+  let colorStyle = "bg-slate-800/80 text-slate-300 border-slate-700";
   if (priority === "HIGH") {
-    colorStyle = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300";
+    colorStyle = "bg-amber-500/15 text-amber-300 border-amber-500/30";
   } else if (priority === "MEDIUM") {
-    colorStyle = "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300";
+    colorStyle = "bg-indigo-500/15 text-indigo-300 border-indigo-500/30";
   }
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-semibold text-xs px-2 py-0.5 rounded-full border ${colorStyle}`}
-      title={`Lead Score: ${score}/100 (${priority} Priority)`}
+      className={`inline-flex items-center gap-1.5 font-mono text-xs px-2 py-0.5 rounded-md border font-semibold tracking-tight ${colorStyle}`}
+      title={`Lead Priority Score: ${score}/100 (${priority})`}
     >
       <span>{score}</span>
-      {showLabel && <span className="opacity-75 uppercase text-[10px] tracking-wider">{priority}</span>}
+      {showLabel && <span className="opacity-80 text-[10px] uppercase tracking-wider font-sans font-bold">{priority}</span>}
     </span>
   );
 }

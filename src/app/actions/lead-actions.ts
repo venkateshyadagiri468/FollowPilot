@@ -129,3 +129,43 @@ export const importLeadsCsvAction = createSafeAction(
   },
   { requiredPermission: "create_leads" }
 );
+
+const bulkUpdateStatusSchema = z.object({
+  leadIds: z.array(z.string()).min(1, "At least one lead ID is required"),
+  newStatus: z.enum([
+    "NEW",
+    "CONTACTED",
+    "REPLIED",
+    "QUALIFIED",
+    "PROPOSAL",
+    "WON",
+    "LOST",
+    "DORMANT",
+  ]),
+});
+
+export const bulkUpdateLeadStatusAction = createSafeAction(
+  bulkUpdateStatusSchema,
+  async (input, context) => {
+    const tenantCtx = buildTenantContext(context);
+    return leadService.bulkUpdateStatus(
+      tenantCtx,
+      input.leadIds,
+      input.newStatus as LeadStatus
+    );
+  },
+  { requiredPermission: "edit_leads" }
+);
+
+const bulkDeleteLeadsSchema = z.object({
+  leadIds: z.array(z.string()).min(1, "At least one lead ID is required"),
+});
+
+export const bulkDeleteLeadsAction = createSafeAction(
+  bulkDeleteLeadsSchema,
+  async (input, context) => {
+    const tenantCtx = buildTenantContext(context);
+    return leadService.bulkDeleteLeads(tenantCtx, input.leadIds);
+  },
+  { requiredPermission: "edit_leads" }
+);

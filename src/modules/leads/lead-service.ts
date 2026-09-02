@@ -3,7 +3,7 @@ import { leadRepository, LeadQueryFilter, LeadEntity } from "./repository";
 import { validateStatusTransition, LeadStatus } from "./lead-state-machine";
 import { calculateLeadScore } from "../scoring/score-engine";
 import { requirePermission } from "@/lib/permissions";
-import { NotFoundError, ValidationError } from "@/lib/errors";
+import { NotFoundError, ValidationError, ConflictError } from "@/lib/errors";
 import { logger } from "@/lib/logging";
 
 export class LeadService {
@@ -59,6 +59,12 @@ export class LeadService {
     const cleanEmail = input.email.toLowerCase().trim();
     if (!cleanEmail.includes("@")) {
       throw new ValidationError("Invalid email address format");
+    }
+
+    const existingLeads = await leadRepository.findLeadsByOrg(context.activeOrgId, { searchQuery: cleanEmail });
+    const duplicate = existingLeads.leads.find((l) => l.email.toLowerCase().trim() === cleanEmail);
+    if (duplicate) {
+      throw new ConflictError(`Lead with email '${cleanEmail}' already exists in organization`);
     }
 
     const partialLead: Partial<LeadEntity> = {
@@ -217,6 +223,54 @@ export class LeadService {
       leadId,
       actorUserId: context.userId,
     });
+  }
+
+  async bulkUpdateStatus(
+    context: TenantContext,
+    leadIds: string[],
+    newStatus: LeadStatus
+  ): Promise<{ updatedCount: number }> {
+    requirePermission(
+      context.userId,
+      context.activeOrgId,
+      context.activeOrgId,
+      context.role,
+      "edit_leads"
+    );
+
+    const updatedCount = await leadRepository.bulkUpdateStatus(context.activeOrgId, leadIds, newStatus);
+    logger.info("lead.bulk_status_updated", {
+      event: "lead.bulk_status_updated",
+      orgId: context.activeOrgId,
+      actorUserId: context.userId,
+      count: updatedCount,
+      newStatus,
+    });
+
+    return { updatedCount };
+  }
+
+  async bulkDeleteLeads(
+    context: TenantContext,
+    leadIds: string[]
+  ): Promise<{ deletedCount: number }> {
+    requirePermission(
+      context.userId,
+      context.activeOrgId,
+      context.activeOrgId,
+      context.role,
+      "edit_leads"
+    );
+
+    const deletedCount = await leadRepository.bulkDeleteLeads(context.activeOrgId, leadIds);
+    logger.info("lead.bulk_deleted", {
+      event: "lead.bulk_deleted",
+      orgId: context.activeOrgId,
+      actorUserId: context.userId,
+      count: deletedCount,
+    });
+
+    return { deletedCount };
   }
 }
 

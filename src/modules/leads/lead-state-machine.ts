@@ -15,10 +15,10 @@ export const ALLOWED_STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
   CONTACTED: ["REPLIED", "QUALIFIED", "LOST", "DORMANT"],
   REPLIED: ["QUALIFIED", "PROPOSAL", "LOST", "DORMANT"],
   QUALIFIED: ["PROPOSAL", "WON", "LOST", "DORMANT"],
-  PROPOSAL: ["WON", "LOST", "DORMANT"],
+  PROPOSAL: ["WON", "QUALIFIED", "LOST", "DORMANT"],
   WON: ["DORMANT", "REPLIED"],
-  LOST: ["NEW", "CONTACTED", "REPLIED"],
-  DORMANT: ["NEW", "CONTACTED", "REPLIED"],
+  LOST: ["NEW", "CONTACTED", "REPLIED", "QUALIFIED"],
+  DORMANT: ["NEW", "CONTACTED", "REPLIED", "QUALIFIED"],
 };
 
 export function isValidStatusTransition(fromStatus: LeadStatus, toStatus: LeadStatus): boolean {

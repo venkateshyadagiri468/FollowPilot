@@ -1,4 +1,4 @@
-import { LeadStatus } from "./lead-state-machine";
+import { LeadStatus, validateStatusTransition } from "./lead-state-machine";
 
 export interface LeadEntity {
   id: string;
@@ -212,6 +212,20 @@ export class LeadRepository {
     return updated;
   }
 
+  async bulkUpdateStatus(orgId: string, leadIds: string[], newStatus: LeadStatus): Promise<number> {
+    let count = 0;
+    LeadRepository.leadsStore.forEach((lead) => {
+      if (lead.organizationId === orgId && leadIds.includes(lead.id) && !lead.deletedAt) {
+        validateStatusTransition(lead.status, newStatus);
+        lead.status = newStatus;
+        lead.updatedAt = new Date().toISOString();
+        lead.lastActivityAt = new Date().toISOString();
+        count++;
+      }
+    });
+    return count;
+  }
+
   async deleteLead(orgId: string, leadId: string): Promise<void> {
     const idx = LeadRepository.leadsStore.findIndex(
       (l) => l.organizationId === orgId && l.id === leadId
@@ -220,6 +234,24 @@ export class LeadRepository {
       LeadRepository.leadsStore[idx].deletedAt = new Date().toISOString();
       LeadRepository.leadsStore[idx].updatedAt = new Date().toISOString();
     }
+  }
+
+  async bulkDeleteLeads(orgId: string, leadIds: string[]): Promise<number> {
+    let count = 0;
+    LeadRepository.leadsStore.forEach((lead) => {
+      if (lead.organizationId === orgId && leadIds.includes(lead.id) && !lead.deletedAt) {
+        lead.deletedAt = new Date().toISOString();
+        lead.updatedAt = new Date().toISOString();
+        count++;
+      }
+    });
+    return count;
+  }
+
+  async getActivitiesForLead(orgId: string, leadId: string): Promise<ActivityEntity[]> {
+    return LeadRepository.activitiesStore.filter(
+      (a) => a.organizationId === orgId && a.leadId === leadId
+    );
   }
 
   async unassignLeadsForMember(orgId: string, userId: string): Promise<number> {

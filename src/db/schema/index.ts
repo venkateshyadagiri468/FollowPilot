@@ -104,6 +104,7 @@ export const leads = pgTable(
       table.organizationId,
       table.nextFollowupAt
     ),
+    index("lead_org_email_idx").on(table.organizationId, table.email),
   ]
 );
 

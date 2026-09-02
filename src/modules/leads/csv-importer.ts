@@ -77,7 +77,8 @@ export function processCsvImport(
   existingLeads: MockLead[],
   orgId: string,
   assignedUserId: string,
-  assignedUserName: string
+  assignedUserName: string,
+  dedupStrategy: "SKIP_DUPLICATE" | "UPDATE_EXISTING" | "ALLOW_DUPLICATE" = "SKIP_DUPLICATE"
 ): CsvImportResult {
   const parsed = Papa.parse<Record<string, string>>(csvContent, {
     header: true,
@@ -126,16 +127,18 @@ export function processCsvImport(
 
     // Duplicate detection
     if (existingEmails.has(lowerEmail)) {
-      duplicateCount++;
-      errors.push({
-        rowIndex,
-        email: rawEmail,
-        reason: "Duplicate lead email already exists in organization",
-      });
-      return;
+      if (dedupStrategy === "SKIP_DUPLICATE") {
+        duplicateCount++;
+        errors.push({
+          rowIndex,
+          email: rawEmail,
+          reason: "Duplicate lead email already exists in organization",
+        });
+        return;
+      }
+    } else {
+      existingEmails.add(lowerEmail);
     }
-
-    existingEmails.add(lowerEmail);
 
     const validStatus = [
       "NEW",

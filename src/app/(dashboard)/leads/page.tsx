@@ -6,6 +6,8 @@ import { useApp } from "@/modules/store/app-context";
 import { ScorePill } from "@/components/domain/ScorePill";
 import { LeadStatusBadge } from "@/components/domain/LeadStatusBadge";
 import { FollowupGeneratorModal } from "@/components/domain/FollowupGeneratorModal";
+import { CsvImportModal } from "@/components/domain/CsvImportModal";
+import { LeadDetailDrawer } from "@/components/domain/LeadDetailDrawer";
 import { MockLead } from "@/modules/store/mock-store";
 import {
   Search,
@@ -17,7 +19,6 @@ import {
   Sparkles,
   UserCheck,
   ChevronRight,
-  Building,
   Mail,
 } from "lucide-react";
 import { NewLeadModal } from "@/components/domain/NewLeadModal";
@@ -31,6 +32,8 @@ export default function LeadsPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
+  const [isCsvImportOpen, setIsCsvImportOpen] = useState(false);
+  const [activeDrawerLead, setActiveDrawerLead] = useState<MockLead | null>(null);
   const [copilotLead, setCopilotLead] = useState<MockLead | null>(null);
 
   // Filter Logic
@@ -90,30 +93,30 @@ export default function LeadsPage() {
   };
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto text-slate-100">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Lead Management
+          <h1 className="text-2xl font-bold tracking-tight">
+            Lead Management Pipeline
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             Manage your sales pipeline, track intent scores, and execute contextual follow-ups.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/leads/import"
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition-colors border border-slate-200 dark:border-slate-700"
+          <button
+            onClick={() => setIsCsvImportOpen(true)}
+            className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#1E2332] hover:bg-[#252C3D] text-slate-200 flex items-center gap-1.5 transition-colors border border-[#2A3144]"
           >
-            <UploadCloud className="w-3.5 h-3.5" />
+            <UploadCloud className="w-4 h-4 text-indigo-400" />
             <span>Import CSV</span>
-          </Link>
+          </button>
 
           <button
             onClick={() => setIsNewLeadOpen(true)}
-            className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs flex items-center gap-1.5 transition-colors"
+            className="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 flex items-center gap-1.5 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Add Lead</span>
@@ -122,7 +125,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Toolbar: Search, Filters & Bulk Actions */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-3 shadow-2xs">
+      <div className="bg-[#12151E] border border-[#1E2332] rounded-xl p-4 space-y-3 shadow-xl">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
           {/* Search Box */}
           <div className="relative w-full md:w-80">
@@ -132,7 +135,7 @@ export default function LeadsPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name, email, or company..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#2A3144] bg-[#0B0C10] text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
             />
           </div>
 
@@ -144,7 +147,7 @@ export default function LeadsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium text-slate-700 dark:text-slate-300 text-xs"
+                className="px-2.5 py-1.5 rounded-lg border border-[#2A3144] bg-[#0B0C10] font-medium text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="NEW">NEW</option>
@@ -162,7 +165,7 @@ export default function LeadsPage() {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium text-slate-700 dark:text-slate-300 text-xs"
+              className="px-2.5 py-1.5 rounded-lg border border-[#2A3144] bg-[#0B0C10] font-medium text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
             >
               <option value="ALL">All Priorities</option>
               <option value="HIGH">High Priority (75+)</option>
@@ -180,7 +183,7 @@ export default function LeadsPage() {
                   setSortOrder("desc");
                 }
               }}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-700"
+              className="px-2.5 py-1.5 rounded-lg border border-[#2A3144] bg-[#0B0C10] font-medium text-slate-200 flex items-center gap-1 hover:bg-[#1A1F2C]"
             >
               <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
               <span>Score {sortBy === "score" ? (sortOrder === "desc" ? "↓" : "↑") : ""}</span>
@@ -190,31 +193,31 @@ export default function LeadsPage() {
 
         {/* Bulk Action Bar */}
         {selectedLeadIds.length > 0 && (
-          <div className="bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-lg px-3 py-2 flex items-center justify-between text-xs animate-in fade-in duration-100">
-            <span className="font-semibold text-indigo-900 dark:text-indigo-200">
+          <div className="bg-indigo-950/60 border border-indigo-800 rounded-lg px-3 py-2 flex items-center justify-between text-xs animate-in fade-in duration-100">
+            <span className="font-semibold text-indigo-200">
               {selectedLeadIds.length} leads selected
             </span>
 
             <div className="flex items-center gap-2">
-              <span className="text-slate-500">Change Status:</span>
+              <span className="text-slate-400">Change Status:</span>
               <button
                 onClick={() => handleBulkStatusChange("CONTACTED")}
-                className="px-2 py-1 bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 font-semibold rounded text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100"
+                className="px-2.5 py-1 bg-[#0B0C10] border border-indigo-700 font-semibold rounded text-indigo-300 hover:bg-indigo-900/50"
               >
                 CONTACTED
               </button>
               <button
                 onClick={() => handleBulkStatusChange("QUALIFIED")}
-                className="px-2 py-1 bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 font-semibold rounded text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100"
+                className="px-2.5 py-1 bg-[#0B0C10] border border-indigo-700 font-semibold rounded text-indigo-300 hover:bg-indigo-900/50"
               >
                 QUALIFIED
               </button>
 
               <button
                 onClick={handleBulkDelete}
-                className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded flex items-center gap-1"
+                className="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white font-semibold rounded flex items-center gap-1"
               >
-                <Trash2 className="w-3 h-3" />
+                <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete</span>
               </button>
             </div>
@@ -223,17 +226,17 @@ export default function LeadsPage() {
       </div>
 
       {/* Leads Data Table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+      <div className="bg-[#12151E] border border-[#1E2332] rounded-xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold uppercase text-[10px] tracking-wider select-none">
+              <tr className="bg-[#0E1017]/80 border-b border-[#1E2332] text-slate-400 font-semibold uppercase text-[10px] tracking-wider select-none">
                 <th className="py-3 px-4 w-10 text-center">
                   <input
                     type="checkbox"
                     checked={selectedLeadIds.length === filteredLeads.length && filteredLeads.length > 0}
                     onChange={toggleSelectAll}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-[#2A3144] bg-[#0B0C10] text-indigo-600 focus:ring-indigo-500"
                   />
                 </th>
                 <th className="py-3 px-4">Lead / Contact</th>
@@ -246,7 +249,7 @@ export default function LeadsPage() {
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-[#1E2332]">
               {filteredLeads.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
@@ -260,56 +263,56 @@ export default function LeadsPage() {
                   return (
                     <tr
                       key={lead.id}
-                      className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
-                        isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/20" : ""
+                      className={`hover:bg-[#181C28]/60 transition-colors ${
+                        isSelected ? "bg-indigo-950/20" : ""
                       }`}
                     >
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3.5 px-4 text-center">
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelectLead(lead.id)}
-                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          className="rounded border-[#2A3144] bg-[#0B0C10] text-indigo-600 focus:ring-indigo-500"
                         />
                       </td>
 
                       {/* Lead Contact */}
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <div>
-                          <Link
-                            href={`/leads/${lead.id}`}
-                            className="font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 text-xs transition-colors flex items-center gap-1 group"
+                          <button
+                            onClick={() => setActiveDrawerLead(lead)}
+                            className="font-bold text-slate-100 hover:text-indigo-400 text-xs transition-colors flex items-center gap-1 group text-left"
                           >
                             <span>{lead.firstName} {lead.lastName}</span>
-                            <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-600 transition-colors" />
-                          </Link>
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+                          </button>
                           <p className="text-[11px] text-slate-400 flex items-center gap-1 pt-0.5">
-                            <Mail className="w-3 h-3 text-slate-400" />
+                            <Mail className="w-3 h-3 text-slate-500" />
                             <span>{lead.email}</span>
                           </p>
                         </div>
                       </td>
 
                       {/* Company */}
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-slate-800 dark:text-slate-200">
+                      <td className="py-3.5 px-4">
+                        <div className="font-medium text-slate-200">
                           {lead.company}
                         </div>
                         <p className="text-[11px] text-slate-400">{lead.jobTitle}</p>
                       </td>
 
                       {/* Status */}
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <LeadStatusBadge status={lead.status} />
                       </td>
 
                       {/* Score */}
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <ScorePill score={lead.score} priority={lead.priority} />
                       </td>
 
                       {/* Last Activity */}
-                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
+                      <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
                         {new Date(lead.lastActivityAt).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
@@ -317,19 +320,19 @@ export default function LeadsPage() {
                       </td>
 
                       {/* Owner */}
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-300">
                           <UserCheck className="w-3 h-3 text-slate-400" />
                           {lead.assignedToName}
                         </span>
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setCopilotLead(lead)}
-                            className="px-2.5 py-1 text-xs font-semibold rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                            className="px-2.5 py-1 text-xs font-semibold rounded bg-indigo-950/60 text-indigo-300 border border-indigo-800 hover:bg-indigo-900 transition-colors flex items-center gap-1"
                           >
                             <Sparkles className="w-3 h-3" />
                             <span>Draft</span>
@@ -347,6 +350,17 @@ export default function LeadsPage() {
 
       {/* New Lead Modal */}
       {isNewLeadOpen && <NewLeadModal onClose={() => setIsNewLeadOpen(false)} />}
+
+      {/* CSV Import Modal */}
+      {isCsvImportOpen && <CsvImportModal onClose={() => setIsCsvImportOpen(false)} />}
+
+      {/* Lead Detail Drawer */}
+      {activeDrawerLead && (
+        <LeadDetailDrawer
+          lead={activeDrawerLead}
+          onClose={() => setActiveDrawerLead(null)}
+        />
+      )}
 
       {/* Copilot Follow-up Modal */}
       {copilotLead && (

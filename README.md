@@ -17,6 +17,7 @@ FollowPilot is a B2B sales follow-up workspace that continuously turns lead acti
 - ✅ **Phase 1**: Product Foundation & Architecture Core
 - ✅ **Phase 2**: Production Architecture Hardening & Security Isolation
 - ✅ **Phase 3**: Authentication & Organization Management (Phase 3 is complete and locked. All Phase 3 acceptance criteria and automated verification currently pass.)
+- ✅ **Phase 4**: Core Lead Management & CSV Ingestion (Lead schema, status state machine rules, CSV import engine with deduplication strategies, activity timeline auditing, Obsidian dark UI)
 
 
 ## Quick Start & Setup

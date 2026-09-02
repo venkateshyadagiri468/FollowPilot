@@ -226,46 +226,46 @@ export default async function MarketingLandingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
           {/* FREE */}
-          <div className="bg-[#12151E] border border-[#1E2332] rounded-md p-6 space-y-4">
-            <h4 className="font-bold text-white text-sm font-mono">FREE</h4>
+          <div className="bg-[#12151E] border border-[#1E2332] hover:border-indigo-500/40 rounded-md p-6 space-y-4 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-indigo-500/5 group">
+            <h4 className="font-bold text-white text-sm font-mono group-hover:text-indigo-300 transition-colors">FREE</h4>
             <div className="text-3xl font-extrabold text-white font-mono">₹0</div>
             <p className="text-slate-400">For freelancers starting out.</p>
             <Link
               href="/sign-up"
-              className="block text-center w-full py-2 bg-[#181C28] border border-[#222838] font-semibold rounded-md text-slate-200"
+              className="block text-center w-full py-2 bg-[#181C28] hover:bg-indigo-600 hover:text-white border border-[#222838] hover:border-indigo-500 font-semibold rounded-md text-slate-200 transition-all duration-200"
             >
               Get Started
             </Link>
           </div>
 
           {/* PRO */}
-          <div className="bg-[#12151E] border-2 border-indigo-600 rounded-md p-6 space-y-4 shadow-sm relative">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white font-bold px-3 py-0.5 rounded-full text-[10px] uppercase font-mono">
+          <div className="bg-[#12151E] border-2 border-indigo-600 hover:border-indigo-500 rounded-md p-6 space-y-4 shadow-lg shadow-indigo-600/10 relative transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/20 group">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white font-bold px-3 py-0.5 rounded-full text-[10px] uppercase font-mono shadow-xs">
               Most Popular
             </span>
-            <h4 className="font-bold text-white text-sm font-mono">PRO</h4>
+            <h4 className="font-bold text-white text-sm font-mono group-hover:text-indigo-300 transition-colors">PRO</h4>
             <div className="text-3xl font-extrabold text-indigo-400 font-mono">
               ₹999 <span className="text-xs text-slate-400 font-normal">/ month</span>
             </div>
             <p className="text-slate-400">For active agencies & sales pros.</p>
             <Link
               href="/sign-up"
-              className="block text-center w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-md shadow-2xs"
+              className="block text-center w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-md shadow-md hover:shadow-indigo-500/30 transition-all duration-200"
             >
               Start Pro Trial
             </Link>
           </div>
 
           {/* BUSINESS */}
-          <div className="bg-[#12151E] border border-[#1E2332] rounded-md p-6 space-y-4">
-            <h4 className="font-bold text-white text-sm font-mono">BUSINESS</h4>
+          <div className="bg-[#12151E] border border-[#1E2332] hover:border-indigo-500/40 rounded-md p-6 space-y-4 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-indigo-500/5 group">
+            <h4 className="font-bold text-white text-sm font-mono group-hover:text-indigo-300 transition-colors">BUSINESS</h4>
             <div className="text-3xl font-extrabold text-white font-mono">
               ₹5,999 <span className="text-xs text-slate-400 font-normal">/ month</span>
             </div>
             <p className="text-slate-400">For high-volume B2B sales teams.</p>
             <Link
               href="/sign-up"
-              className="block text-center w-full py-2 bg-slate-800 font-semibold rounded-md text-white border border-slate-700"
+              className="block text-center w-full py-2 bg-slate-800 hover:bg-indigo-600 hover:text-white font-semibold rounded-md text-white border border-slate-700 hover:border-indigo-500 transition-all duration-200"
             >
               Contact Sales
             </Link>

@@ -11,13 +11,19 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ClerkProvider>
-      <html lang="en" className={`${inter.className} h-full antialiased`}>
-        <body className="min-h-full flex flex-col bg-[#FAF9F6] dark:bg-[#0F1115] text-slate-900 dark:text-slate-100">
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+  const hasClerkKey = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
+  const bodyContent = (
+    <html lang="en" className={`${inter.className} h-full antialiased`}>
+      <body className="min-h-full flex flex-col bg-[#FAF9F6] dark:bg-[#0F1115] text-slate-900 dark:text-slate-100">
+        {children}
+      </body>
+    </html>
   );
+
+  if (hasClerkKey) {
+    return <ClerkProvider>{bodyContent}</ClerkProvider>;
+  }
+
+  return bodyContent;
 }

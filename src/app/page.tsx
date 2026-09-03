@@ -10,18 +10,12 @@ import {
 } from "lucide-react";
 
 export default async function MarketingLandingPage() {
-  const hasClerkKey = Boolean(
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY
-  );
-
   let userId: string | null = null;
-  if (hasClerkKey) {
-    try {
-      const authObj = await auth();
-      userId = authObj?.userId || null;
-    } catch {
-      userId = null;
-    }
+  try {
+    const authObj = await auth();
+    userId = authObj?.userId || null;
+  } catch {
+    userId = null;
   }
 
   const isSignedIn = Boolean(userId);

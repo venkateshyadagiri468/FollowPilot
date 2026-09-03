@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx src/lib/permissions/__tests__/permissions.test.ts && npx tsx src/modules/organizations/__tests__/organization-service.test.ts && npx tsx src/modules/leads/__tests__/state-machine.test.ts && npx tsx src/modules/scoring/__tests__/score-engine.test.ts && npx tsx src/modules/leads/__tests__/csv-importer.test.ts && npx tsx src/modules/leads/__tests__/hardening.test.ts && npx tsx src/modules/leads/__tests__/invariants.test.ts && npx tsx src/modules/activities/__tests__/activities.test.ts && npx tsx src/modules/conversations/__tests__/conversations.test.ts",
+    "test": "npx tsx src/lib/permissions/__tests__/permissions.test.ts && npx tsx src/modules/organizations/__tests__/organization-service.test.ts && npx tsx src/modules/leads/__tests__/state-machine.test.ts && npx tsx src/modules/scoring/__tests__/score-engine.test.ts && npx tsx src/modules/leads/__tests__/csv-importer.test.ts && npx tsx src/modules/leads/__tests__/hardening.test.ts && npx tsx src/modules/leads/__tests__/invariants.test.ts && npx tsx src/modules/activities/__tests__/activities.test.ts && npx tsx src/modules/conversations/__tests__/conversations.test.ts && npx tsx src/features/ai-analysis/__tests__/context-builder.test.ts && npx tsx src/features/ai-analysis/__tests__/recommendations.test.ts && npx tsx src/features/ai-analysis/__tests__/evidence-validation.test.ts && npx tsx src/features/ai-analysis/__tests__/lifecycle.test.ts && npx tsx src/features/ai-analysis/__tests__/ai-service.test.ts && npx tsx tests/ai-evals/eval-runner.test.ts",
     "db:seed": "npx tsx src/db/seed.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"

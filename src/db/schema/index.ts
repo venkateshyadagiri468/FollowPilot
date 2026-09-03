@@ -7,6 +7,8 @@ import {
   uuid,
   index,
   uniqueIndex,
+  boolean,
+  real,
 } from "drizzle-orm/pg-core";
 
 // 1. Users Table
@@ -202,10 +204,37 @@ export const aiAnalyses = pgTable(
     leadId: uuid("lead_id")
       .notNull()
       .references(() => leads.id, { onDelete: "cascade" }),
+    status: text("status", {
+      enum: ["PENDING", "PROCESSING", "COMPLETED", "FAILED", "STALE"],
+    })
+      .default("COMPLETED")
+      .notNull(),
     intent: text("intent", { enum: ["HIGH", "MEDIUM", "LOW", "UNKNOWN"] })
       .default("UNKNOWN")
       .notNull(),
+    intentConfidence: real("intent_confidence").default(0.8).notNull(),
+    sentiment: text("sentiment", {
+      enum: ["POSITIVE", "NEUTRAL", "NEGATIVE", "MIXED", "UNKNOWN"],
+    })
+      .default("NEUTRAL")
+      .notNull(),
+    sentimentConfidence: real("sentiment_confidence").default(0.8).notNull(),
+    urgency: text("urgency", { enum: ["HIGH", "MEDIUM", "LOW"] })
+      .default("MEDIUM")
+      .notNull(),
     signals: jsonb("signals").$type<string[]>().default([]).notNull(),
+    evidence: jsonb("evidence")
+      .$type<
+        {
+          type: string;
+          description: string;
+          sourceType?: "ACTIVITY" | "MESSAGE" | "LEAD_FIELD" | "HEURISTIC";
+          sourceId?: string;
+          timestamp?: string;
+        }[]
+      >()
+      .default([])
+      .notNull(),
     recommendedAction: text("recommended_action", {
       enum: [
         "FOLLOW_UP_NOW",
@@ -218,11 +247,50 @@ export const aiAnalyses = pgTable(
     })
       .default("NO_ACTION")
       .notNull(),
+    recommendedDelayHours: integer("recommended_delay_hours").default(24),
     reasoning: text("reasoning").notNull(),
+    risks: jsonb("risks").$type<string[]>().default([]).notNull(),
     calculatedScore: integer("calculated_score").notNull(),
+    scoreSnapshot: integer("score_snapshot").default(50).notNull(),
+    contextFingerprint: text("context_fingerprint"),
+    promptVersion: text("prompt_version").default("v1.0.0-lead-intent").notNull(),
+    model: text("model").default("gpt-4o-mini-2024-07-18").notNull(),
+    modelVersion: text("model_version"),
+    inputTokens: integer("input_tokens").default(0).notNull(),
+    outputTokens: integer("output_tokens").default(0).notNull(),
+    totalTokens: integer("total_tokens").default(0).notNull(),
+    estimatedCost: text("estimated_cost").default("0.0000").notNull(),
+    isFallback: boolean("is_fallback").default(false).notNull(),
+    analysisSource: text("analysis_source", {
+      enum: ["AI", "DETERMINISTIC_FALLBACK"],
+    })
+      .default("AI")
+      .notNull(),
+    humanOverrideAction: text("human_override_action", {
+      enum: [
+        "FOLLOW_UP_NOW",
+        "FOLLOW_UP_LATER",
+        "WAIT_FOR_RESPONSE",
+        "NURTURE",
+        "NO_ACTION",
+        "SCHEDULE_MEETING",
+      ],
+    }),
+    overrideByUserId: uuid("override_by_user_id").references(() => users.id),
+    overrideAt: timestamp("override_at"),
+    overrideReason: text("override_reason"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    completedAt: timestamp("completed_at"),
   },
-  (table) => [index("ai_lead_idx").on(table.leadId, table.createdAt)]
+  (table) => [
+    index("ai_lead_idx").on(table.leadId, table.createdAt),
+    index("ai_org_lead_status_idx").on(
+      table.organizationId,
+      table.leadId,
+      table.status
+    ),
+    index("ai_org_created_idx").on(table.organizationId, table.createdAt),
+  ]
 );
 
 // 9. Followups Table

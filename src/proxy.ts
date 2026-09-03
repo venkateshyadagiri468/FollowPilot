@@ -8,7 +8,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/webhooks(.*)",
 ]);
 
-export default function middleware(req: NextRequest) {
+export default function proxy(req: NextRequest) {
   // Defensive Guard: If Clerk API keys are missing in Vercel Environment Variables,
   // pass through safely instead of throwing an uncaught exception in Edge runtime.
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || !process.env.CLERK_SECRET_KEY) {
